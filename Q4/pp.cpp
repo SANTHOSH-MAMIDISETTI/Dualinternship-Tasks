@@ -1,5 +1,5 @@
-/*
-  The following code computes the sum of the elements of a vector in parallel using threads
+/* 
+  The following code computes the sum of the elements of a vector in parallel using threads .
   The array is initialized with consecutive integers starting with 0.
   The array size is 1,000,000.
   The program uses multiple threads to compute the sum.
@@ -7,7 +7,7 @@
   The program uses a mutex to protect the shared sum.
   The program uses parallelism.
 
-  Compile & Run : g++ parallel.cpp -o parallel
+  Compile & Run : g++ pp.cpp -o pp
 */
 #include <iostream>
 #include <thread>
@@ -43,6 +43,9 @@ int main() {
 
       std::lock_guard<std::mutex> lock(sum_mutex);  // Lock the mutex
       sum += partial_sum;  // Update the shared sum
+      
+      // Print partial sum calculated by each thread
+      std::cout << "Thread " << std::this_thread::get_id() << " calculated partial sum "<< endl;
     }));
   }
 
@@ -57,18 +60,17 @@ int main() {
   auto duration = duration_cast<milliseconds>(end - start).count();
 
   // Print the sum
-  std::cout << "The sum is " << sum << std::endl;
+  cout << "The sum is " << sum << endl;
 
   // Print the vector elements
 //   std::cout << "The elements of the vector are: ";
 //   for (int i = 0; i < array.size(); i++) {
-    // std::cout << array[i] << " ";
+//     std::cout << array[i] << " ";
 //   }
-  std::cout << std::endl;
+  cout << endl;
 
   // Print the execution time
-  std::cout << "Execution time: " << duration << " milliseconds" << std::endl;
+  cout << "Execution time: " << duration << " milliseconds" << std::endl;
 
   return 0;
 }
-
