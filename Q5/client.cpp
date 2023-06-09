@@ -1,25 +1,49 @@
 #include <iostream>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include<cstring>
-
-using namespace std;
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 int main() {
-  int sockfd;
-  struct sockaddr_in serv_addr;
-  memset(&serv_addr, 0, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = inet_addr("192.168.211.116");
-  // serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  serv_addr.sin_port = htons(2345);
-  sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-  char data[100] = {0};
-  read(sockfd, data, 3);
-  cout << data << endl;
-  write(sockfd, "hello", 5);
-  close(sockfd);
-  return 0;
+    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket == -1) {
+        std::cerr << "Failed to create socket." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in serverAddress{};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(8080);  // Use the same port as the server
+    if (inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr) <= 0) {
+        std::cerr << "Invalid address/Address not supported." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1) {
+        std::cerr << "Connection failed." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    const char *message = "Hello from client!";
+    int bytesWritten = write(clientSocket, message, strlen(message));
+    if (bytesWritten == -1) {
+        std::cerr << "Failed to write data to socket." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[1024];
+    int bytesRead = read(clientSocket, buffer, sizeof(buffer));
+    if (bytesRead == -1) {
+        std::cerr << "Failed to read data from socket." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Received response from server: " << buffer << std::endl;
+
+    close(clientSocket);
+
+    return 0;
 }
