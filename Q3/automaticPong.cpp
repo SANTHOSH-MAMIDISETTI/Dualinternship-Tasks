@@ -67,6 +67,39 @@ bool checkCollision(const sf::RectangleShape& paddle, const sf::CircleShape& bal
   return paddle.getGlobalBounds().intersects(ball.getGlobalBounds());
 }
 
+// Calculate the estimated time of collision between the ball and paddle
+float calculateEstimatedTimeOfCollision(const sf::RectangleShape& paddle, const Ball& ball) {
+  float paddleY = paddle.getPosition().y;
+  float ballY = ball.shape.getPosition().y;
+  float ballVelocityY = ball.velocity.y;
+
+  if (ballVelocityY == 0) {
+    return -1;  // Ball is not moving vertically
+  }
+
+  if (ballVelocityY < 0 && ballY >= paddleY) {
+    return -1;  // Ball is moving away from the paddle
+  }
+
+  if (ballVelocityY > 0 && ballY <= paddleY) {
+    return -1;  // Ball is moving away from the paddle
+  }
+
+  float estimatedTime = abs((paddleY - ballY) / ballVelocityY);
+  return estimatedTime;
+}
+
+// Adjust the AI paddle's speed based on the estimated time of collision
+void adjustAIPaddleSpeed(Paddle& paddle, const float estimatedTime) {
+  if (estimatedTime < 0) {
+    paddle.speed = PaddleSpeed;  // Default speed
+  } else if (estimatedTime < 0.2) {
+    paddle.speed = PaddleSpeed * 1.5;  // Increase speed for quick intercept
+  } else {
+    paddle.speed = PaddleSpeed;  // Default speed
+  }
+}
+
 int main() {
   sf::RenderWindow window(sf::VideoMode(WindowWidth, WindowHeight), "Pong Game");
 
@@ -118,15 +151,23 @@ int main() {
           paddle1.moveDown();
       }
 
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && paddle2.shape.getPosition().y - PaddleHeight / 2 > 0)
+      // AI-controlled paddle 2
+      float ballY = ball.shape.getPosition().y;
+      float paddle2Y = paddle2.shape.getPosition().y;
+
+      if (ballY < paddle2Y && paddle2.shape.getPosition().y - PaddleHeight / 2 > 0)
         paddle2.moveUp();
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) && paddle2.shape.getPosition().y + PaddleHeight / 2 < WindowHeight)
+      if (ballY > paddle2Y && paddle2.shape.getPosition().y + PaddleHeight / 2 < WindowHeight)
         paddle2.moveDown();
 
       ball.update();
 
       if (checkCollision(paddle1.shape, ball.shape) || checkCollision(paddle2.shape, ball.shape)) {
         ball.velocity.x = -ball.velocity.x;
+
+        // Adjust AI paddle speed based on the estimated time of collision
+        float estimatedTime = calculateEstimatedTimeOfCollision(paddle2.shape, ball);
+        adjustAIPaddleSpeed(paddle2, estimatedTime);
       }
 
       if (ball.shape.getPosition().x - BallRadius < 0) {
